@@ -156,8 +156,8 @@ class Enemy:
             if self.distance_to(bullet) < self.r:
                 self.is_alive = False
 
-            if self.is_alive : false:
-                self#intente pero no pude
+         #   if self.is_alive : false:
+           #     self#intente pero no pude
     
     def distance_to(self, bullet):
         xb, yb, tb, sb = bullet
