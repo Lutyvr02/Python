@@ -1,6 +1,13 @@
 import arcade
+import pygame
 import apple as ap
 import snake as snk
+import random
+SUPPORT_MESSAGES = [
+    "¡Gran trabajo!",
+    "¡Vas por buen camino!",
+    "¡Sigue así!",
+]
 
 # Constantes
 SCREEN_WIDTH = 640
@@ -15,7 +22,16 @@ class SnakeGame(arcade.Window):
         self.apple = ap.Apple()
         self.score = 0
         self.frame_count = 0
-        self.game_over = False 
+        self.game_over = False
+        self.support_message = None
+        self.support_message_timer = 0
+        self.support_message_duration = 3 
+
+        # Inicializar pygame para reproducir música
+        pygame.mixer.init()
+        self.background_music = pygame.mixer.Sound("valkirie.mp3")
+        self.game_over_sound = pygame.mixer.Sound("sad.mp3")
+        self.background_music.play(loops=-1)  # Reproducir en bucle
 
     def on_draw(self):
         arcade.start_render()
@@ -27,10 +43,20 @@ class SnakeGame(arcade.Window):
             arcade.draw_rectangle_filled(self.apple.position[0] * GRID_SIZE + GRID_SIZE / 2,
                                          self.apple.position[1] * GRID_SIZE + GRID_SIZE / 2,
                                          GRID_SIZE, GRID_SIZE, arcade.color.RED)
-            arcade.draw_text(f"Score: {self.score}", 10, SCREEN_HEIGHT - 20, arcade.color.WHITE, 16)
-        else:  # Mostrar mensaje de "Game Over" si se ha perdido
-            arcade.draw_text("Game Over", SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2,
+            arcade.draw_text(f"Puntaje: {self.score}", 10, SCREEN_HEIGHT - 20, arcade.color.WHITE, 16)
+            
+            if self.support_message_timer > 0:
+                message_x = SCREEN_WIDTH // 2
+                message_y = SCREEN_HEIGHT - 50  # Cambiar esta coordenada para ajustar la posición vertical
+                arcade.draw_text(self.support_message, message_x, message_y,
+                                 arcade.color.WHITE, font_size=20, anchor_x="center")
+
+        else:
+            arcade.draw_text("Perdiste!", SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2,
                              arcade.color.RED, font_size=50, anchor_x="center")
+            arcade.draw_text("Presiona ESPACIO para reiniciar", SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 50,
+                             arcade.color.WHITE, font_size=20, anchor_x="center")
+
 
 
     def on_update(self, delta_time):
@@ -42,8 +68,24 @@ class SnakeGame(arcade.Window):
                     self.snake.segments.append(self.apple.position)
                     self.apple.respawn()
                     self.score += 1
+                    self.show_support_message()
+
                 elif self.snake.collides_with_self() or not self.is_snake_within_bounds():
                     self.game_over = True
+                    # Detener la música al perder
+                    self.stop_support_message()
+                    self.background_music.stop()
+                    self.game_over_sound.play()
+        if self.support_message_timer > 0:
+            self.support_message_timer -= delta_time
+    
+    def show_support_message(self):
+        self.support_message = random.choice(SUPPORT_MESSAGES)
+        self.support_message_timer = self.support_message_duration
+    
+    def stop_support_message(self):
+        self.support_message = None  # Detener el mensaje de apoyo
+        self.support_message_timer = 0
 
     def is_snake_within_bounds(self):
         head_x, head_y = self.snake.segments[0]
@@ -68,6 +110,10 @@ class SnakeGame(arcade.Window):
         self.score = 0
         self.frame_count = 0
         self.game_over = False
+
+        # Reiniciar la música
+        self.background_music.stop()
+        self.background_music.play(loops=-1)
 
 def main():
     game = SnakeGame(SCREEN_WIDTH, SCREEN_HEIGHT)
